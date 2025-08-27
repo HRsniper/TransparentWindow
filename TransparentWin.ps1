@@ -2,7 +2,7 @@
 function Check-WindowsVersion {
     $version = [System.Environment]::OSVersion.Version
     if ($version.Major -lt 10) {
-        Write-Host "`n⚠️  Este script requer Windows 10 ou superior." -ForegroundColor Red
+        Show-Error "Este script requer Windows 10 ou superior."
         exit
     }
 }
@@ -75,7 +75,7 @@ function Get-WindowHandle($process) {
         return $handle
     }
     catch {
-        Write-Host "`n❌  Erro ao obter HWND: $_" -ForegroundColor Red
+        Show-Error "Erro ao obter HWND." $_
         return $null
     }
 }
@@ -125,7 +125,7 @@ function Apply-Transparency($selectedWindowHandle, $selectedWindowTitle) {
         Write-Host "`n✅  Transparência aplicada à janela '$selectedWindowTitle' com opacidade $opacityText." -ForegroundColor Green
     }
     catch {
-        Write-Host "`n❌  Falha ao aplicar transparência: $_" -ForegroundColor Red
+        Show-Error "Falha ao aplicar transparência." $_
     }
 }
 
@@ -136,7 +136,15 @@ function Apply-TopMost($selectedWindowHandle, $selectedWindowTitle) {
         Write-Host "`n📌  Janela '$selectedWindowTitle' fixada no topo." -ForegroundColor Green
     }
     catch {
-        Write-Host "`n❌  Falha ao fixar no topo: $_" -ForegroundColor Red
+        Show-Error "Falha ao fixar no topo." $_
+    }
+}
+
+# Função centralizada para exibir mensagens de erro
+function Show-Error($mensagem, $detalhe = $null) {
+    Write-Host "`n❌  $mensagem" -ForegroundColor Red
+    if ($detalhe) {
+        Write-Host "    Detalhe: $detalhe" -ForegroundColor DarkRed
     }
 }
 
@@ -190,7 +198,7 @@ do {
 
     # Verifica se há janelas disponíveis
     if ($windowList.Count -eq 0) {
-        Write-Host "`n⚠️  Nenhuma janela visível encontrada." -ForegroundColor Red
+        Show-Error "Nenhuma janela visível encontrada."
         Start-Sleep -Seconds 2
         continue
     }
@@ -203,7 +211,7 @@ do {
 
     # Valida o índice informado
     if ($selectedIndex -notmatch '^\d+$' -or [int]$selectedIndex -ge $windowList.Count) {
-        Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
+        Show-Error "Índice inválido. Tente novamente."
         Start-Sleep -Seconds 2
         continue
     }
@@ -215,7 +223,7 @@ do {
 
     # Verifica se o handle é válido
     if (-not $selectedWindowHandle -or $selectedWindowHandle -eq [IntPtr]::Zero) {
-        Write-Host "`n❌  Janela inválida ou inacessível." -ForegroundColor Red
+        Show-Error "Janela inválida ou inacessível."
         Start-Sleep -Seconds 2
         continue
     }
@@ -225,7 +233,7 @@ do {
         "1" { Apply-Transparency $selectedWindowHandle $selectedWindowTitle }
         "2" { Apply-TopMost $selectedWindowHandle $selectedWindowTitle }
         default {
-            Write-Host "`n⚠️  Opção inválida. Tente novamente." -ForegroundColor Red
+            Show-Error "Opção inválida. Tente novamente."
         }
     }
 
