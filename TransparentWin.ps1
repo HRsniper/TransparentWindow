@@ -134,6 +134,7 @@ function Apply-Transparency($selectedWindowHandle, $selectedWindowTitle) {
 function Apply-TopMost($selectedWindowHandle, $selectedWindowTitle) {
     try {
         [WinAPI]::SetWindowPos($selectedWindowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
+        [WinAPI]::ShowWindow($selectedWindowHandle, 5) | Out-Null  # SW_SHOW = 5
         Write-Host "`n📌  Janela '$selectedWindowTitle' fixada no topo." -ForegroundColor Green
     }
     catch {
@@ -148,7 +149,9 @@ function Undo-TopMost($windowHandle, $windowTitle) {
         [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
         # Envia a janela para o fundo
         [WinAPI]::SetWindowPos($windowHandle, $HWND_BOTTOM, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
-        Write-Host "`n↩️  'Sempre no topo' desfeito e janela enviada para baixo: '$windowTitle'." -ForegroundColor Green
+        # Minimiza a janela após enviá-la para o fundo
+        [WinAPI]::ShowWindow($windowHandle, 6) | Out-Null  # SW_MINIMIZE = 6
+        Write-Host "`n↩️  'Sempre no topo' desfeito, janela enviada para baixo e minimizada: '$windowTitle'." -ForegroundColor Green
     }
     catch {
         Show-Error "Falha ao desfazer 'sempre no topo'." $_
@@ -176,10 +179,16 @@ public class WinAPI {
     public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
 
     [DllImport("user32.dll")]
-    public static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
 
     [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 }
 "@
 
