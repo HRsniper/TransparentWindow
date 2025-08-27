@@ -124,7 +124,7 @@ function Get-WindowHandle($process) {
 }
 function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
     try {
-        # Obtém o estilo atual da janela
+        # Obtém os estilos estendidos atuais da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
 
         # Adiciona o estilo WS_EX_LAYERED para permitir transparência
@@ -136,6 +136,7 @@ function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
         return $true
     }
     catch {
+        # Exibe erro se algo falhar
         Show-Error "Erro ao aplicar transparência via WinAPI." $_
         return $false
     }
@@ -191,7 +192,7 @@ function Apply-Transparency($windowHandle, $windowTitle) {
 # Define a janela como "sempre no topo" (topmost)
 function Apply-TopMost($windowHandle, $windowTitle) {
     try {
-        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
         [WinAPI]::ShowWindow($windowHandle, 5) | Out-Null  # SW_SHOW = 5
         Write-Host "`n📌  Janela '$windowTitle' fixada no topo." -ForegroundColor Green
     }
@@ -202,18 +203,25 @@ function Apply-TopMost($windowHandle, $windowTitle) {
 
 function Apply-PassiveTopMost($windowHandle, $windowTitle) {
     try {
+        # Define opacidade padrão para modo passivo (ex: 128 = 50%)
+        $opacityValue = 128
+
+        # Aplica transparência à janela usando função reutilizável
+        if (-not (Set-WindowTransparency $windowHandle $opacityValue)) {
+            return  # Se falhar, sai da função
+        }
+
         # Obtém os estilos estendidos atuais da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
 
-        # Adiciona os estilos WS_EX_LAYERED (necessário para transparência) e WS_EX_TRANSPARENT (ignora cliques)
-        $newStyle = $style -bor $WS_EX_LAYERED -bor $WS_EX_TRANSPARENT
+        # Adiciona o estilo WS_EX_TRANSPARENT para ignorar cliques
+        $newStyle = $style -bor $WS_EX_TRANSPARENT
 
         # Aplica os novos estilos à janela
         [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
 
         # Define a janela como "sempre no topo", sem alterar posição ou tamanho
-        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0,
-            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
 
         # Exibe mensagem de sucesso
         Write-Host "`n📌  Janela '$windowTitle' fixada no topo em modo passivo (não bloqueia cliques)." -ForegroundColor Green
