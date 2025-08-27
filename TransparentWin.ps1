@@ -1,4 +1,5 @@
-﻿function Check-WindowsVersion {
+﻿# Verifica se o sistema é compatível (Windows 10 ou superior)
+function Check-WindowsVersion {
     $version = [System.Environment]::OSVersion.Version
     if ($version.Major -lt 10) {
         Write-Host "`n⚠️  Este script requer Windows 10 ou superior." -ForegroundColor Red
@@ -6,7 +7,8 @@
     }
 }
 
-function Show-Menu {
+# Exibe o menu principal
+function Show-MainMenu {
     Clear-Host
     Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
     Write-Host "║  🖥️  Gerenciador de Janelas Windows     ║" -ForegroundColor Cyan
@@ -18,26 +20,28 @@ function Show-Menu {
     return (Read-Host "`nEscolha uma opção")
 }
 
+# Converte número em emoji numérico
 function Convert-ToEmojiNumber($number) {
     $digits = $number.ToString().ToCharArray()
     $emojiDigits = @()
     foreach ($digit in $digits) {
-        switch ($digit) {
-            '0' { $emojiDigits += "0️⃣" }
-            '1' { $emojiDigits += "1️⃣" }
-            '2' { $emojiDigits += "2️⃣" }
-            '3' { $emojiDigits += "3️⃣" }
-            '4' { $emojiDigits += "4️⃣" }
-            '5' { $emojiDigits += "5️⃣" }
-            '6' { $emojiDigits += "6️⃣" }
-            '7' { $emojiDigits += "7️⃣" }
-            '8' { $emojiDigits += "8️⃣" }
-            '9' { $emojiDigits += "9️⃣" }
+        $emojiDigits += switch ($digit) {
+            '0' { "0️⃣" }
+            '1' { "1️⃣" }
+            '2' { "2️⃣" }
+            '3' { "3️⃣" }
+            '4' { "4️⃣" }
+            '5' { "5️⃣" }
+            '6' { "6️⃣" }
+            '7' { "7️⃣" }
+            '8' { "8️⃣" }
+            '9' { "9️⃣" }
         }
     }
     return ($emojiDigits -join "")
 }
 
+# Obtém lista de janelas visíveis, excluindo processos críticos
 function Get-VisibleWindows {
     $excluidos = @("System", "Idle", "explorer", "svchost", "wininit", "services", "lsass", "csrss", "smss", "winlogon")
     $windowList = @()
@@ -49,17 +53,19 @@ function Get-VisibleWindows {
     return $windowList
 }
 
-function Display-Windows($windowList) {
+# Exibe lista de janelas com emojis numéricos
+function Show-WindowList($windowList) {
     Write-Host "`n🪟  Janelas Visíveis:" -ForegroundColor Yellow
     for ($i = 0; $i -lt $windowList.Count; $i++) {
         $proc = $windowList[$i]
         $emojiIndex = Convert-ToEmojiNumber $i
         $name = $proc.ProcessName
         $title = $proc.MainWindowTitle
-        Write-Host "$emojiIndex  [$name] '$title'" -ForegroundColor Gray
+        Write-Host "$emojiIndex  [$name]#️⃣  $title" -ForegroundColor Gray
     }
 }
 
+# Obtém o handle da janela
 function Get-WindowHandle($process) {
     try {
         $handle = [IntPtr]$process.MainWindowHandle
@@ -74,7 +80,8 @@ function Get-WindowHandle($process) {
     }
 }
 
-function Set-Transparency($hwnd, $title) {
+# Aplica transparência à janela
+function Apply-Transparency($hwnd, $title) {
     $opacity = Read-Host "Digite o nível de opacidade (0 a 255)"
     if ($opacity -notmatch '^\d+$' -or [int]$opacity -lt 0 -or [int]$opacity -gt 255) {
         Write-Host "`n⚠️  Valor inválido. Use um número entre 0 e 255." -ForegroundColor Red
@@ -91,7 +98,8 @@ function Set-Transparency($hwnd, $title) {
     }
 }
 
-function Set-TopMost($hwnd, $title) {
+# Fixar janela no topo
+function Apply-TopMost($hwnd, $title) {
     try {
         [WinAPI]::SetWindowPos($hwnd, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
         Write-Host "`n📌  Janela '$title' fixada no topo." -ForegroundColor Green
@@ -101,6 +109,7 @@ function Set-TopMost($hwnd, $title) {
     }
 }
 
+# Tipos e constantes da API do Windows
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -120,7 +129,7 @@ public class WinAPI {
 }
 "@
 
-# Constantes
+# Constantes WinAPI
 $GWL_EXSTYLE = -20
 $WS_EX_LAYERED = 0x80000
 $LWA_ALPHA = 0x2
@@ -132,8 +141,9 @@ $SWP_SHOWWINDOW = 0x0040
 # Verificação de compatibilidade
 Check-WindowsVersion
 
+# Loop principal
 do {
-    $option = Show-Menu
+    $option = Show-MainMenu
     if ($option -eq "0") {
         Write-Host "`n👋  Encerrando o painel. Até a próxima!" -ForegroundColor Cyan
         break
@@ -146,7 +156,7 @@ do {
         continue
     }
 
-    Display-Windows $windowList
+    Show-WindowList $windowList
     $selectedIndex = Read-Host "`nDigite o número da janela que deseja manipular"
     if ($selectedIndex -notmatch '^\d+$' -or [int]$selectedIndex -ge $windowList.Count) {
         Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
@@ -163,8 +173,8 @@ do {
     }
 
     switch ($option) {
-        "1" { Set-Transparency $hwnd $selectedWindow.MainWindowTitle }
-        "2" { Set-TopMost $hwnd $selectedWindow.MainWindowTitle }
+        "1" { Apply-Transparency $hwnd $selectedWindow.MainWindowTitle }
+        "2" { Apply-TopMost $hwnd $selectedWindow.MainWindowTitle }
         default {
             Write-Host "`n⚠️  Opção inválida. Tente novamente." -ForegroundColor Red
         }
