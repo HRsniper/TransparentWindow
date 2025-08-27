@@ -1,4 +1,4 @@
-﻿# Verifica se o sistema é compatível (Windows 10 ou superior)
+﻿# Verifica se o sistema operacional é compatível (Windows 10 ou superior)
 function Check-WindowsVersion {
     $version = [System.Environment]::OSVersion.Version
     if ($version.Major -lt 10) {
@@ -7,7 +7,7 @@ function Check-WindowsVersion {
     }
 }
 
-# Exibe o menu principal
+# Exibe o menu principal com opções de ação
 function Show-MainMenu {
     Clear-Host
     Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -20,7 +20,7 @@ function Show-MainMenu {
     return (Read-Host "`nEscolha uma opção")
 }
 
-# Converte número em emoji numérico
+# Converte um número inteiro em uma sequência de emojis numéricos
 function Convert-ToEmojiNumber($number) {
     $digits = $number.ToString().ToCharArray()
     $emojiDigits = @()
@@ -41,7 +41,7 @@ function Convert-ToEmojiNumber($number) {
     return ($emojiDigits -join "")
 }
 
-# Obtém lista de janelas visíveis, excluindo processos críticos
+# Obtém a lista de janelas visíveis, excluindo processos críticos do sistema
 function Get-VisibleWindows {
     $excluidos = @("System", "Idle", "explorer", "svchost", "wininit", "services", "lsass", "csrss", "smss", "winlogon")
     $windowList = @()
@@ -53,7 +53,7 @@ function Get-VisibleWindows {
     return $windowList
 }
 
-# Exibe lista de janelas com emojis numéricos
+# Exibe a lista de janelas visíveis com índice em emoji, nome do processo e título
 function Show-WindowList($windowList) {
     Write-Host "`n🪟  Janelas Visíveis:" -ForegroundColor Yellow
     for ($i = 0; $i -lt $windowList.Count; $i++) {
@@ -61,11 +61,11 @@ function Show-WindowList($windowList) {
         $emojiIndex = Convert-ToEmojiNumber $i
         $name = $proc.ProcessName
         $title = $proc.MainWindowTitle
-        Write-Host "$emojiIndex  [$name]#️⃣  $title" -ForegroundColor Gray
+        Write-Host "$emojiIndex  [$name]  #️⃣  $title" -ForegroundColor Gray
     }
 }
 
-# Obtém o handle da janela
+# Obtém o identificador da janela (HWND) do processo selecionado
 function Get-WindowHandle($process) {
     try {
         $handle = [IntPtr]$process.MainWindowHandle
@@ -80,7 +80,7 @@ function Get-WindowHandle($process) {
     }
 }
 
-# Aplica transparência à janela
+# Aplica transparência à janela selecionada com nível de opacidade definido pelo usuário
 function Apply-Transparency($hwnd, $title) {
     $opacity = Read-Host "Digite o nível de opacidade (0 a 255)"
     if ($opacity -notmatch '^\d+$' -or [int]$opacity -lt 0 -or [int]$opacity -gt 255) {
@@ -98,7 +98,7 @@ function Apply-Transparency($hwnd, $title) {
     }
 }
 
-# Fixar janela no topo
+# Define a janela como "sempre no topo" (topmost)
 function Apply-TopMost($hwnd, $title) {
     try {
         [WinAPI]::SetWindowPos($hwnd, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
@@ -109,7 +109,7 @@ function Apply-TopMost($hwnd, $title) {
     }
 }
 
-# Tipos e constantes da API do Windows
+# Define as funções da API do Windows necessárias para manipular janelas
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -129,7 +129,7 @@ public class WinAPI {
 }
 "@
 
-# Constantes WinAPI
+# Constantes utilizadas pelas funções da API do Windows
 $GWL_EXSTYLE = -20
 $WS_EX_LAYERED = 0x80000
 $LWA_ALPHA = 0x2
@@ -138,10 +138,10 @@ $SWP_NOMOVE = 0x0002
 $SWP_NOSIZE = 0x0001
 $SWP_SHOWWINDOW = 0x0040
 
-# Verificação de compatibilidade
+# Executa verificação de compatibilidade do sistema
 Check-WindowsVersion
 
-# Loop principal
+# Loop principal do programa
 do {
     $option = Show-MainMenu
     if ($option -eq "0") {
