@@ -254,7 +254,7 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
 # Função para desfazer "sempre no topo"
 function Undo-TopMost($windowHandle, $windowTitle) {
     try {
-        # Remove o estilo topmost
+        # Remove o estilo "sempre no topo", sem alterar posição ou tamanho
         [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
         # Envia a janela para o fundo
         [WinAPI]::SetWindowPos($windowHandle, $HWND_BOTTOM, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
@@ -269,15 +269,14 @@ function Undo-TopMost($windowHandle, $windowTitle) {
 
 function Undo-PassiveTopMost($windowHandle, $windowTitle) {
     try {
+        # Remove WS_EX_TRANSPARENT e restaura opacidade total
         $opacityIn100Percent = $Global:opacityOptions[9].Value
         Set-WindowTransparency $windowHandle $opacityIn100Percent "removeTransparent"
 
-        # Remove o estilo "sempre no topo", sem alterar posição ou tamanho
-        [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0,
-            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        Undo-TopMost $windowHandle $windowTitle
 
         # Exibe mensagem de sucesso
-        Write-Host "`n↩️  Modo passivo desfeito. Janela '$windowTitle' voltou ao comportamento normal." -ForegroundColor Green
+        Write-Host "`n🫥  Modo passivo desfeito. Janela '$windowTitle' voltou ao comportamento normal." -ForegroundColor DarkGray
     }
     catch {
         # Exibe mensagem de erro em caso de falha
