@@ -234,12 +234,10 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
             return
         }
 
-        # Define a janela como "sempre no topo"
-        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0,
-            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        Apply-TopMost $windowHandle $windowTitle
 
-        # Mensagem de sucesso
-        Write-Host "`n📌  Janela '$windowTitle' fixada no topo em modo passivo com opacidade $opacityText." -ForegroundColor Green
+        # Exibe mensagem adicional sobre o modo passivo
+        Write-Host "🫥  Modo passivo ativado: janela '$windowTitle' não captura cliques." -ForegroundColor DarkGray
     }
     catch {
         Show-Error "Erro ao aplicar modo passivo no topo." $_
