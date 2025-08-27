@@ -1,4 +1,44 @@
-﻿# Verifica se o sistema operacional é compatível (Windows 10 ou superior)
+﻿# Define as funções da API do Windows necessárias para manipular janelas
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+
+public class WinAPI {
+    [DllImport("user32.dll")]
+    public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+}
+"@
+
+# Constantes utilizadas pelas funções da API do Windows
+$GWL_EXSTYLE = -20                # Índice para estilo estendido da janela
+$WS_EX_LAYERED = 0x80000          # Permite aplicar efeitos visuais como transparência
+$LWA_ALPHA = 0x2                  # Define que a opacidade será aplicada via canal alpha
+
+$HWND_TOPMOST = [IntPtr]::op_Explicit(-1)    # Handle especial para manter janela no topo
+$HWND_NOTOPMOST = [IntPtr]::op_Explicit(-2)  # Handle para remover "sempre no topo"
+$HWND_BOTTOM = [IntPtr]::op_Explicit(1)      # Handle correto para enviar janela para o fundo
+
+$SWP_NOMOVE = 0x0002              # Não altera posição da janela
+$SWP_NOSIZE = 0x0001              # Não altera tamanho da janela
+$SWP_SHOWWINDOW = 0x0040          # Garante que a janela será exibida após alteração
+$WS_EX_TRANSPARENT = 0x20         # Permite que a janela seja clicável através de áreas transparentes
+
+# Verifica se o sistema operacional é compatível (Windows 10 ou superior)
 function Check-WindowsVersion {
     $osVersion = [System.Environment]::OSVersion.Version
     if ($osVersion.Major -lt 10) {
@@ -17,6 +57,8 @@ function Show-MainMenu {
     Write-Host "1️⃣  Aplicar transparência" -ForegroundColor White
     Write-Host "2️⃣  Fixar no topo" -ForegroundColor White
     Write-Host "3️⃣  Desfazer topo" -ForegroundColor White
+    Write-Host "4️⃣  Fixar no topo (modo passivo)" -ForegroundColor White
+    Write-Host "5️⃣  Desfazer topo passivo" -ForegroundColor White
     Write-Host "0️⃣  Sair" -ForegroundColor White
     return (Read-Host "`nEscolha uma opção")
 }
@@ -138,7 +180,31 @@ function Apply-TopMost($windowHandle, $windowTitle) {
         Write-Host "`n📌  Janela '$windowTitle' fixada no topo." -ForegroundColor Green
     }
     catch {
-        Show-Error "Falha ao fixar no topo." $_
+        Show-Error "Falha ao fixar no topo com transparência interativa." $_
+    }
+}
+
+function Apply-PassiveTopMost($windowHandle, $windowTitle) {
+    try {
+        # Obtém os estilos estendidos atuais da janela
+        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
+
+        # Adiciona os estilos WS_EX_LAYERED (necessário para transparência) e WS_EX_TRANSPARENT (ignora cliques)
+        $newStyle = $style -bor $WS_EX_LAYERED -bor $WS_EX_TRANSPARENT
+
+        # Aplica os novos estilos à janela
+        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+
+        # Define a janela como "sempre no topo", sem alterar posição ou tamanho
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0,
+            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+
+        # Exibe mensagem de sucesso
+        Write-Host "`n📌  Janela '$windowTitle' fixada no topo em modo passivo (não bloqueia cliques)." -ForegroundColor Green
+    }
+    catch {
+        # Exibe mensagem de erro em caso de falha
+        Show-Error "Erro ao aplicar modo passivo no topo." $_
     }
 }
 
@@ -158,6 +224,29 @@ function Undo-TopMost($windowHandle, $windowTitle) {
     }
 }
 
+function Undo-PassiveTopMost($windowHandle, $windowTitle) {
+    try {
+        # Obtém os estilos estendidos atuais da janela
+        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
+
+        # Remove o estilo WS_EX_TRANSPARENT usando operação bitwise AND com complemento
+        $newStyle = $style -band (-bnot $WS_EX_TRANSPARENT)
+
+        # Aplica os estilos atualizados à janela
+        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+
+        # Remove o estilo "sempre no topo", sem alterar posição ou tamanho
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0,
+            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+
+        # Exibe mensagem de sucesso
+        Write-Host "`n↩️  Modo passivo desfeito. Janela '$windowTitle' voltou ao comportamento normal." -ForegroundColor Green
+    }
+    catch {
+        # Exibe mensagem de erro em caso de falha
+        Show-Error "Erro ao desfazer modo passivo." $_
+    }
+}
 # Função centralizada para exibir mensagens de erro
 function Show-Error($message, $detail = $null) {
     Write-Host "`n❌  $message" -ForegroundColor Red
@@ -165,45 +254,6 @@ function Show-Error($message, $detail = $null) {
         Write-Host "    Detalhe: $detail" -ForegroundColor DarkRed
     }
 }
-
-# Define as funções da API do Windows necessárias para manipular janelas
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-
-public class WinAPI {
-    [DllImport("user32.dll")]
-    public static extern int GetWindowLong(IntPtr hWnd, int nIndex);
-
-    [DllImport("user32.dll")]
-    public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-}
-"@
-
-# Constantes utilizadas pelas funções da API do Windows
-$GWL_EXSTYLE = -20                # Índice para estilo estendido da janela
-$WS_EX_LAYERED = 0x80000          # Permite aplicar efeitos visuais como transparência
-$LWA_ALPHA = 0x2                  # Define que a opacidade será aplicada via canal alpha
-
-$HWND_TOPMOST = [IntPtr]::op_Explicit(-1)    # Handle especial para manter janela no topo
-$HWND_NOTOPMOST = [IntPtr]::op_Explicit(-2)  # Handle para remover "sempre no topo"
-$HWND_BOTTOM = [IntPtr]::op_Explicit(1)      # Handle correto para enviar janela para o fundo
-
-$SWP_NOMOVE = 0x0002              # Não altera posição da janela
-$SWP_NOSIZE = 0x0001              # Não altera tamanho da janela
-$SWP_SHOWWINDOW = 0x0040          # Garante que a janela será exibida após alteração
 
 # Executa verificação de compatibilidade do sistema
 Check-WindowsVersion
@@ -259,10 +309,12 @@ do {
         "1" { Apply-Transparency $selectedWindowHandle $selectedWindowTitle }
         "2" { Apply-TopMost $selectedWindowHandle $selectedWindowTitle }
         "3" { Undo-TopMost $selectedWindowHandle $selectedWindowTitle }
-        default {
-            Show-Error "Opção inválida. Tente novamente."
-        }
+        "4" { Apply-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
+        "5" { Undo-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
+    default {
+        Show-Error "Opção inválida. Tente novamente."
     }
+}
 
     # Pausa antes de reiniciar o loop
     Start-Sleep -Seconds 2
