@@ -135,14 +135,25 @@ function Get-VisibleWindows {
 
 # Exibe a lista de janelas visíveis com índice em emoji, nome do processo e título
 function Show-WindowList($windowList) {
+    # lista de janelas visíveis, percorre cada janela e extrai o comprimento do nome do processo ou do título da janela,
+    # calcula o maior valor entre esses comprimentos e extrai o número final
+    $maxProcessLength = ($windowList | ForEach-Object { $_.ProcessName.Length } | Measure-Object -Maximum).Maximum
+    $maxTitleLength = ($windowList | ForEach-Object { $_.MainWindowTitle.Length } | Measure-Object -Maximum).Maximum
+
+    $formatMask = "{0,-4} {1,-$maxProcessLength} {2,-$maxTitleLength}"
+
     Write-Host "`n🪟  Janelas Visíveis:" -ForegroundColor Yellow
+
     for ($i = 0; $i -lt $windowList.Count; $i++) {
         $window = $windowList[$i]
         $emojiIndex = Convert-ToEmojiNumber $i
         $processName = $window.ProcessName
-        $windowTitle = $window.MainWindowTitle
-        Write-Host "$emojiIndex  [$processName]#️⃣  $windowTitle" -ForegroundColor Gray
+        $windowTitle = if ($window.MainWindowTitle) { $window.MainWindowTitle } else { "[Sem título]" }
+
+        Write-Host ($formatMask -f "$emojiIndex", "$processName", "$windowTitle") -ForegroundColor Gray
     }
+
+    Write-Host "`n🔢  Total de janelas visíveis: $($windowList.Count)" -ForegroundColor DarkGray
 }
 
 # Obtém o identificador da janela (HWND) do processo selecionado
