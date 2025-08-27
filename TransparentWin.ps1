@@ -80,13 +80,20 @@ function Get-WindowHandle($process) {
     }
 }
 
-# Aplica transparência à janela selecionada com nível de opacidade definido pelo usuário
+# Aplica transparência à janela selecionada com validação e valor padrão
 function Apply-Transparency($hwnd, $title) {
-    $opacity = Read-Host "Digite o nível de opacidade (0 a 255)"
+    $opacity = Read-Host "Digite o nível de opacidade (0 a 255) ou pressione Enter para usar padrão (128)"
+
+    if ([string]::IsNullOrWhiteSpace($opacity)) {
+        $opacity = 128
+        Write-Host "🔧  Usando opacidade padrão: 128" -ForegroundColor Yellow
+    }
+
     if ($opacity -notmatch '^\d+$' -or [int]$opacity -lt 0 -or [int]$opacity -gt 255) {
         Write-Host "`n⚠️  Valor inválido. Use um número entre 0 e 255." -ForegroundColor Red
         return
     }
+
     try {
         $style = [WinAPI]::GetWindowLong($hwnd, $GWL_EXSTYLE)
         [WinAPI]::SetWindowLong($hwnd, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
@@ -130,13 +137,15 @@ public class WinAPI {
 "@
 
 # Constantes utilizadas pelas funções da API do Windows
-$GWL_EXSTYLE = -20        # Índice usado para acessar o estilo estendido da janela (Extended Window Style)
-$WS_EX_LAYERED = 0x80000    # Estilo que permite aplicar efeitos visuais como transparência (Layered Window)
-$LWA_ALPHA = 0x2        # Flag que indica que a opacidade será definida via canal alpha (transparência)
-$HWND_TOPMOST = [IntPtr]::Zero -bor 0xFFFFFFFF  # Handle especial que posiciona a janela sempre no topo (TopMost)
-$SWP_NOMOVE = 0x0002     # Flag que indica que a posição da janela não deve ser alterada
-$SWP_NOSIZE = 0x0001     # Flag que indica que o tamanho da janela não deve ser alterado
-$SWP_SHOWWINDOW = 0x0040     # Flag que garante que a janela será exibida após a alteração de posição
+$GWL_EXSTYLE = -20        # Índice para estilo estendido da janela
+$WS_EX_LAYERED = 0x80000    # Permite aplicar efeitos visuais como transparência
+$LWA_ALPHA = 0x2        # Define que a opacidade será aplicada via canal alpha
+
+$HWND_TOPMOST = [IntPtr]::Zero -bor 0xFFFFFFFF  # Handle especial para manter janela no topo
+
+$SWP_NOMOVE = 0x0002     # Não altera posição da janela
+$SWP_NOSIZE = 0x0001     # Não altera tamanho da janela
+$SWP_SHOWWINDOW = 0x0040     # Garante que a janela será exibida após alteração
 
 # Executa verificação de compatibilidade do sistema
 Check-WindowsVersion
