@@ -183,10 +183,10 @@ function Select-OpacityLevel {
     # Captura entrada do usuário
     $selectedOpacityIndex = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
 
-    # Define índice padrão se vazio
+    # Se vazio, retorna diretamente o objeto padrão (50%)
     if ([string]::IsNullOrWhiteSpace($selectedOpacityIndex)) {
-        $selectedOpacityIndex = 4
         Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
+        return $Global:opacityOptions[4]
     }
 
     # Valida entrada
@@ -269,8 +269,8 @@ function Undo-TopMost($windowHandle, $windowTitle) {
 
 function Undo-PassiveTopMost($windowHandle, $windowTitle) {
     try {
-        $windowOpacity = $Global:opacityOptions[4].Value
-        Set-WindowTransparency $windowHandle $windowOpacity "removeTransparent"
+        $opacityIn100Percent = $Global:opacityOptions[9].Value
+        Set-WindowTransparency $windowHandle $opacityIn100Percent "removeTransparent"
 
         # Remove o estilo "sempre no topo", sem alterar posição ou tamanho
         [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0,
