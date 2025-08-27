@@ -64,17 +64,40 @@ function Check-WindowsVersion {
 # Exibe o menu principal com opções de ação
 function Show-MainMenu {
     Clear-Host
-    Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║  🖥️  Gerenciador de Janelas Windows     ║" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Cyan
+    $title = "🖥️  Gerenciador de Janelas Windows"
+    $border = "═" * ($title.Length + 4)
+    $padding = (($border.Length - $title.Length) / 2) + 1
+    $titleLine = (" " * [Math]::Floor($padding)) + $title + (" " * [Math]::Ceiling($padding))
+
+    Write-Host "╔$border╗" -ForegroundColor Cyan
+    Write-Host "║$titleLine║" -ForegroundColor Cyan
+    Write-Host "╚$border╝" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "1️⃣  Aplicar transparência" -ForegroundColor White
-    Write-Host "2️⃣  Fixar no topo" -ForegroundColor White
-    Write-Host "3️⃣  Desfazer topo" -ForegroundColor White
-    Write-Host "4️⃣  Fixar no topo (modo passivo)" -ForegroundColor White
-    Write-Host "5️⃣  Desfazer topo passivo" -ForegroundColor White
-    Write-Host "0️⃣  Sair" -ForegroundColor White
-    return (Read-Host "`nEscolha uma opção")
+
+    $menuItems = @(
+        @{ Key = "1"; Label = "Aplicar transparência" },
+        @{ Key = "2"; Label = "Fixar no topo" },
+        @{ Key = "3"; Label = "Desafixar do topo" },
+        @{ Key = "4"; Label = "Fixar no topo (modo passivo)" },
+        @{ Key = "5"; Label = "Desafixar do topo (modo passivo)" },
+        @{ Key = "0"; Label = "Sair" }
+    )
+
+    foreach ($item in $menuItems) {
+        $emojiKey = Convert-ToEmojiNumber $item.Key
+        Write-Host "$emojiKey  $($item.Label)" -ForegroundColor White
+    }
+
+    # Captura e valida entrada do usuário
+    $validOptions = $menuItems.Key
+    do {
+        $option = Read-Host "`n⬆️  Escolha uma opção"
+        if ($validOptions -notcontains $option) {
+            Show-Error "Opção inválida. Digite um número entre 0 e 5."
+        }
+    } while ($validOptions -notcontains $option)
+
+    return $option
 }
 
 # Converte um número inteiro em uma sequência de emojis numéricos
