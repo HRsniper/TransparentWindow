@@ -80,25 +80,54 @@ function Get-WindowHandle($process) {
     }
 }
 
-# Aplica transparência à janela selecionada com validação e valor padrão
+# Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
 function Apply-Transparency($hwnd, $title) {
-    $opacity = Read-Host "Digite o nível de opacidade (0 a 255) ou pressione Enter para usar padrão (128)"
+    # Lista de opacidades em porcentagem e seus equivalentes em valor (0–255)
+    $opcoes = @(
+        @{ Porcentagem = "10%"; Valor = 26 },
+        @{ Porcentagem = "20%"; Valor = 51 },
+        @{ Porcentagem = "30%"; Valor = 77 },
+        @{ Porcentagem = "40%"; Valor = 102 },
+        @{ Porcentagem = "50%"; Valor = 128 },
+        @{ Porcentagem = "60%"; Valor = 153 },
+        @{ Porcentagem = "70%"; Valor = 179 },
+        @{ Porcentagem = "80%"; Valor = 204 },
+        @{ Porcentagem = "90%"; Valor = 230 },
+        @{ Porcentagem = "100%"; Valor = 255 }
+    )
 
-    if ([string]::IsNullOrWhiteSpace($opacity)) {
-        $opacity = 128
-        Write-Host "🔧  Usando opacidade padrão: 128" -ForegroundColor Yellow
+    # Exibe opções de opacidade com índice emoji
+    Write-Host "`n📊  Escolha o nível de opacidade:" -ForegroundColor Cyan
+    for ($i = 0; $i -lt $opcoes.Count; $i++) {
+        $emojiIndex = Convert-ToEmojiNumber $i
+        $porcentagem = $opcoes[$i].Porcentagem
+        Write-Host "$emojiIndex  $porcentagem" -ForegroundColor Gray
     }
 
-    if ($opacity -notmatch '^\d+$' -or [int]$opacity -lt 0 -or [int]$opacity -gt 255) {
-        Write-Host "`n⚠️  Valor inválido. Use um número entre 0 e 255." -ForegroundColor Red
+    # Solicita seleção do usuário
+    $indice = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
+
+    # Usa valor padrão se nada for digitado
+    if ([string]::IsNullOrWhiteSpace($indice)) {
+        $indice = 4
+        Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
+    }
+
+    # Valida entrada
+    if ($indice -notmatch '^\d+$' -or [int]$indice -lt 0 -or [int]$indice -ge $opcoes.Count) {
+        Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
         return
     }
 
+    $opacityValue = $opcoes[$indice].Valor
+    $opacityText = $opcoes[$indice].Porcentagem
+
+    # Aplica transparência via WinAPI
     try {
         $style = [WinAPI]::GetWindowLong($hwnd, $GWL_EXSTYLE)
         [WinAPI]::SetWindowLong($hwnd, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
-        [WinAPI]::SetLayeredWindowAttributes($hwnd, 0, [byte]$opacity, $LWA_ALPHA) | Out-Null
-        Write-Host "`n✅  Transparência aplicada à janela '$title' com opacidade $opacity." -ForegroundColor Green
+        [WinAPI]::SetLayeredWindowAttributes($hwnd, 0, [byte]$opacityValue, $LWA_ALPHA) | Out-Null
+        Write-Host "`n✅  Transparência aplicada à janela '$title' com opacidade $opacityText." -ForegroundColor Green
     }
     catch {
         Write-Host "`n❌  Falha ao aplicar transparência: $_" -ForegroundColor Red
