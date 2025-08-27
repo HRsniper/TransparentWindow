@@ -1,21 +1,21 @@
-﻿function Show-Menu {
+﻿function Check-WindowsVersion {
+    $version = [System.Environment]::OSVersion.Version
+    if ($version.Major -lt 10) {
+        Write-Host "`n⚠️  Este script requer Windows 10 ou superior." -ForegroundColor Red
+        exit
+    }
+}
+
+function Show-Menu {
     Clear-Host
     Write-Host "╔════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║    🖥️  Gerenciador de Janelas Windows   ║" -ForegroundColor Cyan
+    Write-Host "║  🖥️  Gerenciador de Janelas Windows     ║" -ForegroundColor Cyan
     Write-Host "╚════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "1️⃣  Aplicar transparência" -ForegroundColor White
     Write-Host "2️⃣  Fixar no topo" -ForegroundColor White
     Write-Host "0️⃣  Sair" -ForegroundColor White
     return (Read-Host "`nEscolha uma opção")
-}
-
-function Get-VisibleWindows {
-    $windowList = @()
-    Get-Process | Where-Object { $_.MainWindowTitle } | ForEach-Object {
-        $windowList += $_
-    }
-    return $windowList
 }
 
 function Convert-ToEmojiNumber($number) {
@@ -36,6 +36,17 @@ function Convert-ToEmojiNumber($number) {
         }
     }
     return ($emojiDigits -join "")
+}
+
+function Get-VisibleWindows {
+    $excluidos = @("System", "Idle", "explorer", "svchost", "wininit", "services", "lsass", "csrss", "smss", "winlogon")
+    $windowList = @()
+    Get-Process | Where-Object {
+        $_.MainWindowTitle -and ($excluidos -notcontains $_.ProcessName)
+    } | ForEach-Object {
+        $windowList += $_
+    }
+    return $windowList
 }
 
 function Display-Windows($windowList) {
@@ -118,6 +129,9 @@ $SWP_NOMOVE = 0x0002
 $SWP_NOSIZE = 0x0001
 $SWP_SHOWWINDOW = 0x0040
 
+# Verificação de compatibilidade
+Check-WindowsVersion
+
 do {
     $option = Show-Menu
     if ($option -eq "0") {
@@ -142,7 +156,8 @@ do {
 
     $selectedWindow = $windowList[$selectedIndex]
     $hwnd = Get-WindowHandle $selectedWindow
-    if (-not $hwnd) {
+    if (-not $hwnd -or $hwnd -eq [IntPtr]::Zero) {
+        Write-Host "`n❌  Janela inválida ou inacessível." -ForegroundColor Red
         Start-Sleep -Seconds 2
         continue
     }
