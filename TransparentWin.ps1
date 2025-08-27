@@ -122,8 +122,7 @@ function Get-WindowHandle($process) {
         return $null
     }
 }
-function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [bool]$IgnoreClicks = $false){
-        # IgnoreClicks = $false, Se verdadeiro, aplica WS_EX_TRANSPARENT
+function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mode = "normal"){
     try {
         # Obtém os estilos estendidos atuais da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
@@ -131,8 +130,8 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [bool]$Igno
         # Adiciona o estilo WS_EX_LAYERED para permitir transparência
         $newStyle = $style -bor $WS_EX_LAYERED
 
-        # Se solicitado, adiciona WS_EX_TRANSPARENT para ignorar cliques
-        if ($IgnoreClicks) {
+        # Se o modo for "passive", adiciona WS_EX_TRANSPARENT para ignorar cliques
+        if ($Mode -eq "passive") {
             $newStyle = $newStyle -bor $WS_EX_TRANSPARENT
         }
 
@@ -230,7 +229,7 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
         $opacityValue = $opacityChoice.Value
         $opacityText = $opacityChoice.Percentage
 
-         if (-not (Set-WindowTransparency $windowHandle $opacityValue $true)) {
+         if (-not (Set-WindowTransparency $windowHandle $opacityValue "passive")) {
             return
         }
 
