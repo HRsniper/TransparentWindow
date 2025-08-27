@@ -122,13 +122,22 @@ function Get-WindowHandle($process) {
         return $null
     }
 }
-function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
+function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [bool]$IgnoreClicks = $false){
+        # IgnoreClicks = $false, Se verdadeiro, aplica WS_EX_TRANSPARENT
     try {
         # Obtém os estilos estendidos atuais da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
 
         # Adiciona o estilo WS_EX_LAYERED para permitir transparência
-        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
+        $newStyle = $style -bor $WS_EX_LAYERED
+
+        # Se solicitado, adiciona WS_EX_TRANSPARENT para ignorar cliques
+        if ($IgnoreClicks) {
+            $newStyle = $newStyle -bor $WS_EX_TRANSPARENT
+        }
+
+        # Aplica os estilos atualizados
+        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
 
         # Aplica o nível de opacidade usando canal alpha
         [WinAPI]::SetLayeredWindowAttributes($windowHandle, 0, $opacityValue, $LWA_ALPHA) | Out-Null
@@ -136,7 +145,6 @@ function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
         return $true
     }
     catch {
-        # Exibe erro se algo falhar
         Show-Error "Erro ao aplicar transparência via WinAPI." $_
         return $false
     }
@@ -222,17 +230,9 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
         $opacityValue = $opacityChoice.Value
         $opacityText = $opacityChoice.Percentage
 
-        # Aplica transparência via função reutilizável
-        if (-not (Set-WindowTransparency $windowHandle $opacityValue)) {
+         if (-not (Set-WindowTransparency $windowHandle $opacityValue $true)) {
             return
         }
-
-        # Obtém estilo atual da janela
-        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
-
-        # Adiciona estilo WS_EX_TRANSPARENT para ignorar cliques
-        $newStyle = $style -bor $WS_EX_TRANSPARENT
-        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
 
         # Define a janela como "sempre no topo"
         [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0,
