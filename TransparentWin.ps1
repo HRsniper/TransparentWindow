@@ -16,6 +16,7 @@ function Show-MainMenu {
     Write-Host ""
     Write-Host "1️⃣  Aplicar transparência" -ForegroundColor White
     Write-Host "2️⃣  Fixar no topo" -ForegroundColor White
+    Write-Host "3️⃣  Desfazer topo" -ForegroundColor White
     Write-Host "0️⃣  Sair" -ForegroundColor White
     return (Read-Host "`nEscolha uma opção")
 }
@@ -140,6 +141,20 @@ function Apply-TopMost($selectedWindowHandle, $selectedWindowTitle) {
     }
 }
 
+# Função para desfazer "sempre no topo"
+function Undo-TopMost($windowHandle, $windowTitle) {
+    try {
+        # Remove o estilo topmost
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        # Envia a janela para o fundo
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_BOTTOM, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        Write-Host "`n↩️  'Sempre no topo' desfeito e janela enviada para baixo: '$windowTitle'." -ForegroundColor Green
+    }
+    catch {
+        Show-Error "Falha ao desfazer 'sempre no topo'." $_
+    }
+}
+
 # Função centralizada para exibir mensagens de erro
 function Show-Error($mensagem, $detalhe = $null) {
     Write-Host "`n❌  $mensagem" -ForegroundColor Red
@@ -169,15 +184,17 @@ public class WinAPI {
 "@
 
 # Constantes utilizadas pelas funções da API do Windows
-$GWL_EXSTYLE = -20        # Índice para estilo estendido da janela
-$WS_EX_LAYERED = 0x80000    # Permite aplicar efeitos visuais como transparência
-$LWA_ALPHA = 0x2        # Define que a opacidade será aplicada via canal alpha
+$GWL_EXSTYLE = -20                # Índice para estilo estendido da janela
+$WS_EX_LAYERED = 0x80000         # Permite aplicar efeitos visuais como transparência (L = long literal)
+$LWA_ALPHA = 0x2                  # Define que a opacidade será aplicada via canal alpha
 
-$HWND_TOPMOST = [IntPtr]::Zero -bor 0xFFFFFFFF  # Handle especial para manter janela no topo
+$HWND_TOPMOST = [IntPtr]::op_Explicit(-1)    # Handle especial para manter janela no topo
+$HWND_NOTOPMOST = [IntPtr]::op_Explicit(-2)  # Handle para remover "sempre no topo"
+$HWND_BOTTOM = [IntPtr]::op_Explicit(1)      # Handle correto para enviar janela para o fundo
 
-$SWP_NOMOVE = 0x0002     # Não altera posição da janela
-$SWP_NOSIZE = 0x0001     # Não altera tamanho da janela
-$SWP_SHOWWINDOW = 0x0040     # Garante que a janela será exibida após alteração
+$SWP_NOMOVE = 0x0002              # Não altera posição da janela
+$SWP_NOSIZE = 0x0001              # Não altera tamanho da janela
+$SWP_SHOWWINDOW = 0x0040          # Garante que a janela será exibida após alteração
 
 # Executa verificação de compatibilidade do sistema
 Check-WindowsVersion
@@ -232,6 +249,7 @@ do {
     switch ($option) {
         "1" { Apply-Transparency $selectedWindowHandle $selectedWindowTitle }
         "2" { Apply-TopMost $selectedWindowHandle $selectedWindowTitle }
+        "3" { Undo-TopMost $selectedWindowHandle $selectedWindowTitle }
         default {
             Show-Error "Opção inválida. Tente novamente."
         }
