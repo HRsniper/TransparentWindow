@@ -38,6 +38,20 @@ $SWP_NOSIZE = 0x0001              # Não altera tamanho da janela
 $SWP_SHOWWINDOW = 0x0040          # Garante que a janela será exibida após alteração
 $WS_EX_TRANSPARENT = 0x20         # Permite que a janela seja clicável através de áreas transparentes
 
+# 🌫️ Opções globais de opacidade
+$Global:opacityOptions = @(
+    @{ Percentage = "10%"; Value = 26 },
+    @{ Percentage = "20%"; Value = 51 },
+    @{ Percentage = "30%"; Value = 77 },
+    @{ Percentage = "40%"; Value = 102 },
+    @{ Percentage = "50%"; Value = 128 },
+    @{ Percentage = "60%"; Value = 153 },
+    @{ Percentage = "70%"; Value = 179 },
+    @{ Percentage = "80%"; Value = 204 },
+    @{ Percentage = "90%"; Value = 230 },
+    @{ Percentage = "100%"; Value = 255 }
+)
+
 # Verifica se o sistema operacional é compatível (Windows 10 ou superior)
 function Check-WindowsVersion {
     $osVersion = [System.Environment]::OSVersion.Version
@@ -122,7 +136,7 @@ function Get-WindowHandle($process) {
         return $null
     }
 }
-function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mode = "normal"){
+function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mode = "normal") {
     try {
         # Obtém os estilos estendidos atuais da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
@@ -133,6 +147,11 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
         # Se o modo for "passive", adiciona WS_EX_TRANSPARENT para ignorar cliques
         if ($Mode -eq "passive") {
             $newStyle = $newStyle -bor $WS_EX_TRANSPARENT
+        }
+
+        # Remove o estilo WS_EX_TRANSPARENT se estiver presente
+        if ($Mode -eq "removeTransparent") {
+            $newStyle = $style -band (-bnot $WS_EX_TRANSPARENT)
         }
 
         # Aplica os estilos atualizados
@@ -150,25 +169,14 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
 }
 
 function Select-OpacityLevel {
-    # Define opções de opacidade disponíveis
-    $opacityOptions = @(
-        @{ Percentage = "10%"; Value = 26 },
-        @{ Percentage = "20%"; Value = 51 },
-        @{ Percentage = "30%"; Value = 77 },
-        @{ Percentage = "40%"; Value = 102 },
-        @{ Percentage = "50%"; Value = 128 },
-        @{ Percentage = "60%"; Value = 153 },
-        @{ Percentage = "70%"; Value = 179 },
-        @{ Percentage = "80%"; Value = 204 },
-        @{ Percentage = "90%"; Value = 230 },
-        @{ Percentage = "100%"; Value = 255 }
-    )
+    # Usa a variável global de opacidade
+    $options = $Global:opacityOptions
 
     # Exibe opções para o usuário
     Write-Host "`n📊  Escolha o nível de opacidade:" -ForegroundColor Cyan
-    for ($i = 0; $i -lt $opacityOptions.Count; $i++) {
+    for ($i = 0; $i -lt $options.Count; $i++) {
         $emojiIndex = Convert-ToEmojiNumber $i
-        $percentage = $opacityOptions[$i].Percentage
+        $percentage = $options[$i].Percentage
         Write-Host "$emojiIndex  $percentage" -ForegroundColor Gray
     }
 
@@ -182,13 +190,13 @@ function Select-OpacityLevel {
     }
 
     # Valida entrada
-    if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $opacityOptions.Count) {
+    if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $options.Count) {
         Show-Error "Índice inválido. Tente novamente."
         return $null
     }
 
     # Retorna objeto com valor e texto
-    return $opacityOptions[$selectedOpacityIndex]
+    return $options[$selectedOpacityIndex]
 }
 
 # Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
@@ -229,7 +237,7 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
         $opacityValue = $opacityChoice.Value
         $opacityText = $opacityChoice.Percentage
 
-         if (-not (Set-WindowTransparency $windowHandle $opacityValue "passive")) {
+        if (-not (Set-WindowTransparency $windowHandle $opacityValue "passive")) {
             return
         }
 
@@ -261,14 +269,8 @@ function Undo-TopMost($windowHandle, $windowTitle) {
 
 function Undo-PassiveTopMost($windowHandle, $windowTitle) {
     try {
-        # Obtém os estilos estendidos atuais da janela
-        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
-
-        # Remove o estilo WS_EX_TRANSPARENT usando operação bitwise AND com complemento
-        $newStyle = $style -band (-bnot $WS_EX_TRANSPARENT)
-
-        # Aplica os estilos atualizados à janela
-        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+        $windowOpacity = $Global:opacityOptions[4].Value
+        Set-WindowTransparency $windowHandle $windowOpacity "removeTransparent"
 
         # Remove o estilo "sempre no topo", sem alterar posição ou tamanho
         [WinAPI]::SetWindowPos($windowHandle, $HWND_NOTOPMOST, 0, 0, 0, 0,
