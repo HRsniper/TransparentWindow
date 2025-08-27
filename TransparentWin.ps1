@@ -203,31 +203,67 @@ function Apply-TopMost($windowHandle, $windowTitle) {
 
 function Apply-PassiveTopMost($windowHandle, $windowTitle) {
     try {
-        # Define opacidade padrão para modo passivo (ex: 128 = 50%)
-        $opacityValue = 128
+        # Define opções de opacidade disponíveis
+        $opacityOptions = @(
+            @{ Percentage = "10%"; Value = 26 },
+            @{ Percentage = "20%"; Value = 51 },
+            @{ Percentage = "30%"; Value = 77 },
+            @{ Percentage = "40%"; Value = 102 },
+            @{ Percentage = "50%"; Value = 128 },
+            @{ Percentage = "60%"; Value = 153 },
+            @{ Percentage = "70%"; Value = 179 },
+            @{ Percentage = "80%"; Value = 204 },
+            @{ Percentage = "90%"; Value = 230 },
+            @{ Percentage = "100%"; Value = 255 }
+        )
 
-        # Aplica transparência à janela usando função reutilizável
-        if (-not (Set-WindowTransparency $windowHandle $opacityValue)) {
-            return  # Se falhar, sai da função
+        # Exibe opções de opacidade para o usuário
+        Write-Host "`n📊  Escolha o nível de opacidade para modo passivo:" -ForegroundColor Cyan
+        for ($i = 0; $i -lt $opacityOptions.Count; $i++) {
+            $emojiIndex = Convert-ToEmojiNumber $i
+            $percentage = $opacityOptions[$i].Percentage
+            Write-Host "$emojiIndex  $percentage" -ForegroundColor Gray
         }
 
-        # Obtém os estilos estendidos atuais da janela
+        # Captura a escolha do usuário
+        $selectedOpacityIndex = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
+
+        # Define índice padrão se o usuário não digitar nada
+        if ([string]::IsNullOrWhiteSpace($selectedOpacityIndex)) {
+            $selectedOpacityIndex = 4
+            Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
+        }
+
+        # Valida entrada
+        if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $opacityOptions.Count) {
+            Show-Error "Índice inválido. Tente novamente."
+            return
+        }
+
+        # Obtém valor de opacidade selecionado
+        $opacityValue = $opacityOptions[$selectedOpacityIndex].Value
+        $opacityText = $opacityOptions[$selectedOpacityIndex].Percentage
+
+        # Aplica transparência via função reutilizável
+        if (-not (Set-WindowTransparency $windowHandle $opacityValue)) {
+            return
+        }
+
+        # Obtém estilo atual da janela
         $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
 
-        # Adiciona o estilo WS_EX_TRANSPARENT para ignorar cliques
+        # Adiciona estilo WS_EX_TRANSPARENT para ignorar cliques
         $newStyle = $style -bor $WS_EX_TRANSPARENT
-
-        # Aplica os novos estilos à janela
         [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
 
-        # Define a janela como "sempre no topo", sem alterar posição ou tamanho
-        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
+        # Define a janela como "sempre no topo"
+        [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0,
+            $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW) | Out-Null
 
-        # Exibe mensagem de sucesso
-        Write-Host "`n📌  Janela '$windowTitle' fixada no topo em modo passivo (não bloqueia cliques)." -ForegroundColor Green
+        # Mensagem de sucesso
+        Write-Host "`n📌  Janela '$windowTitle' fixada no topo em modo passivo com opacidade $opacityText." -ForegroundColor Green
     }
     catch {
-        # Exibe mensagem de erro em caso de falha
         Show-Error "Erro ao aplicar modo passivo no topo." $_
     }
 }
