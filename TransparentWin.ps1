@@ -130,13 +130,13 @@ public class WinAPI {
 "@
 
 # Constantes utilizadas pelas funções da API do Windows
-$GWL_EXSTYLE = -20
-$WS_EX_LAYERED = 0x80000
-$LWA_ALPHA = 0x2
-$HWND_TOPMOST = [IntPtr]::Zero -bor 0xFFFFFFFF
-$SWP_NOMOVE = 0x0002
-$SWP_NOSIZE = 0x0001
-$SWP_SHOWWINDOW = 0x0040
+$GWL_EXSTYLE = -20        # Índice usado para acessar o estilo estendido da janela (Extended Window Style)
+$WS_EX_LAYERED = 0x80000    # Estilo que permite aplicar efeitos visuais como transparência (Layered Window)
+$LWA_ALPHA = 0x2        # Flag que indica que a opacidade será definida via canal alpha (transparência)
+$HWND_TOPMOST = [IntPtr]::Zero -bor 0xFFFFFFFF  # Handle especial que posiciona a janela sempre no topo (TopMost)
+$SWP_NOMOVE = 0x0002     # Flag que indica que a posição da janela não deve ser alterada
+$SWP_NOSIZE = 0x0001     # Flag que indica que o tamanho da janela não deve ser alterado
+$SWP_SHOWWINDOW = 0x0040     # Flag que garante que a janela será exibida após a alteração de posição
 
 # Executa verificação de compatibilidade do sistema
 Check-WindowsVersion
