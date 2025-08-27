@@ -142,8 +142,8 @@ function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
     }
 }
 
-# Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
-function Apply-Transparency($windowHandle, $windowTitle) {
+function Select-OpacityLevel {
+    # Define opções de opacidade disponíveis
     $opacityOptions = @(
         @{ Percentage = "10%"; Value = 26 },
         @{ Percentage = "20%"; Value = 51 },
@@ -157,6 +157,7 @@ function Apply-Transparency($windowHandle, $windowTitle) {
         @{ Percentage = "100%"; Value = 255 }
     )
 
+    # Exibe opções para o usuário
     Write-Host "`n📊  Escolha o nível de opacidade:" -ForegroundColor Cyan
     for ($i = 0; $i -lt $opacityOptions.Count; $i++) {
         $emojiIndex = Convert-ToEmojiNumber $i
@@ -164,20 +165,32 @@ function Apply-Transparency($windowHandle, $windowTitle) {
         Write-Host "$emojiIndex  $percentage" -ForegroundColor Gray
     }
 
+    # Captura entrada do usuário
     $selectedOpacityIndex = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
 
+    # Define índice padrão se vazio
     if ([string]::IsNullOrWhiteSpace($selectedOpacityIndex)) {
         $selectedOpacityIndex = 4
         Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
     }
 
+    # Valida entrada
     if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $opacityOptions.Count) {
-        Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
-        return
+        Show-Error "Índice inválido. Tente novamente."
+        return $null
     }
 
-    $opacityValue = $opacityOptions[$selectedOpacityIndex].Value
-    $opacityText = $opacityOptions[$selectedOpacityIndex].Percentage
+    # Retorna objeto com valor e texto
+    return $opacityOptions[$selectedOpacityIndex]
+}
+
+# Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
+function Apply-Transparency($windowHandle, $windowTitle) {
+    $opacityChoice = Select-OpacityLevel
+    if (-not $opacityChoice) { return }
+
+    $opacityValue = $opacityChoice.Value
+    $opacityText = $opacityChoice.Percentage
 
     # Aplica transparência via WinAPI
     try {
@@ -203,46 +216,11 @@ function Apply-TopMost($windowHandle, $windowTitle) {
 
 function Apply-PassiveTopMost($windowHandle, $windowTitle) {
     try {
-        # Define opções de opacidade disponíveis
-        $opacityOptions = @(
-            @{ Percentage = "10%"; Value = 26 },
-            @{ Percentage = "20%"; Value = 51 },
-            @{ Percentage = "30%"; Value = 77 },
-            @{ Percentage = "40%"; Value = 102 },
-            @{ Percentage = "50%"; Value = 128 },
-            @{ Percentage = "60%"; Value = 153 },
-            @{ Percentage = "70%"; Value = 179 },
-            @{ Percentage = "80%"; Value = 204 },
-            @{ Percentage = "90%"; Value = 230 },
-            @{ Percentage = "100%"; Value = 255 }
-        )
+        $opacityChoice = Select-OpacityLevel
+        if (-not $opacityChoice) { return }
 
-        # Exibe opções de opacidade para o usuário
-        Write-Host "`n📊  Escolha o nível de opacidade para modo passivo:" -ForegroundColor Cyan
-        for ($i = 0; $i -lt $opacityOptions.Count; $i++) {
-            $emojiIndex = Convert-ToEmojiNumber $i
-            $percentage = $opacityOptions[$i].Percentage
-            Write-Host "$emojiIndex  $percentage" -ForegroundColor Gray
-        }
-
-        # Captura a escolha do usuário
-        $selectedOpacityIndex = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
-
-        # Define índice padrão se o usuário não digitar nada
-        if ([string]::IsNullOrWhiteSpace($selectedOpacityIndex)) {
-            $selectedOpacityIndex = 4
-            Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
-        }
-
-        # Valida entrada
-        if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $opacityOptions.Count) {
-            Show-Error "Índice inválido. Tente novamente."
-            return
-        }
-
-        # Obtém valor de opacidade selecionado
-        $opacityValue = $opacityOptions[$selectedOpacityIndex].Value
-        $opacityText = $opacityOptions[$selectedOpacityIndex].Percentage
+        $opacityValue = $opacityChoice.Value
+        $opacityText = $opacityChoice.Percentage
 
         # Aplica transparência via função reutilizável
         if (-not (Set-WindowTransparency $windowHandle $opacityValue)) {
