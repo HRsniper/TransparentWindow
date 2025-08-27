@@ -122,6 +122,24 @@ function Get-WindowHandle($process) {
         return $null
     }
 }
+function Set-WindowTransparency($windowHandle, [byte]$opacityValue) {
+    try {
+        # Obtém o estilo atual da janela
+        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
+
+        # Adiciona o estilo WS_EX_LAYERED para permitir transparência
+        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
+
+        # Aplica o nível de opacidade usando canal alpha
+        [WinAPI]::SetLayeredWindowAttributes($windowHandle, 0, $opacityValue, $LWA_ALPHA) | Out-Null
+
+        return $true
+    }
+    catch {
+        Show-Error "Erro ao aplicar transparência via WinAPI." $_
+        return $false
+    }
+}
 
 # Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
 function Apply-Transparency($windowHandle, $windowTitle) {
@@ -162,9 +180,7 @@ function Apply-Transparency($windowHandle, $windowTitle) {
 
     # Aplica transparência via WinAPI
     try {
-        $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
-        [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
-        [WinAPI]::SetLayeredWindowAttributes($windowHandle, 0, [byte]$opacityValue, $LWA_ALPHA) | Out-Null
+        Set-WindowTransparency $windowHandle $opacityValue
         Write-Host "`n✅  Transparência aplicada à janela '$windowTitle' com opacidade $opacityText." -ForegroundColor Green
     }
     catch {
@@ -311,10 +327,10 @@ do {
         "3" { Undo-TopMost $selectedWindowHandle $selectedWindowTitle }
         "4" { Apply-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
         "5" { Undo-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
-    default {
-        Show-Error "Opção inválida. Tente novamente."
+        default {
+            Show-Error "Opção inválida. Tente novamente."
+        }
     }
-}
 
     # Pausa antes de reiniciar o loop
     Start-Sleep -Seconds 2
