@@ -57,11 +57,11 @@ function Get-VisibleWindows {
 function Show-WindowList($windowList) {
     Write-Host "`n🪟  Janelas Visíveis:" -ForegroundColor Yellow
     for ($i = 0; $i -lt $windowList.Count; $i++) {
-        $proc = $windowList[$i]
+        $window = $windowList[$i]
         $emojiIndex = Convert-ToEmojiNumber $i
-        $name = $proc.ProcessName
-        $title = $proc.MainWindowTitle
-        Write-Host "$emojiIndex  [$name]  #️⃣  $title" -ForegroundColor Gray
+        $processName = $window.ProcessName
+        $windowTitle = $window.MainWindowTitle
+        Write-Host "$emojiIndex  [$processName]  #️⃣  $windowTitle" -ForegroundColor Gray
     }
 }
 
@@ -81,8 +81,7 @@ function Get-WindowHandle($process) {
 }
 
 # Aplica transparência à janela selecionada com seleção por índice e valores pré-definidos
-function Apply-Transparency($hwnd, $title) {
-    # Lista de opacidades em porcentagem e seus equivalentes em valor (0–255)
+function Apply-Transparency($selectedWindowHandle, $selectedWindowTitle) {
     $opcoes = @(
         @{ Porcentagem = "10%"; Valor = 26 },
         @{ Porcentagem = "20%"; Valor = 51 },
@@ -96,7 +95,6 @@ function Apply-Transparency($hwnd, $title) {
         @{ Porcentagem = "100%"; Valor = 255 }
     )
 
-    # Exibe opções de opacidade com índice emoji
     Write-Host "`n📊  Escolha o nível de opacidade:" -ForegroundColor Cyan
     for ($i = 0; $i -lt $opcoes.Count; $i++) {
         $emojiIndex = Convert-ToEmojiNumber $i
@@ -104,16 +102,13 @@ function Apply-Transparency($hwnd, $title) {
         Write-Host "$emojiIndex  $porcentagem" -ForegroundColor Gray
     }
 
-    # Solicita seleção do usuário
     $indice = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
 
-    # Usa valor padrão se nada for digitado
     if ([string]::IsNullOrWhiteSpace($indice)) {
         $indice = 4
         Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
     }
 
-    # Valida entrada
     if ($indice -notmatch '^\d+$' -or [int]$indice -lt 0 -or [int]$indice -ge $opcoes.Count) {
         Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
         return
@@ -124,10 +119,10 @@ function Apply-Transparency($hwnd, $title) {
 
     # Aplica transparência via WinAPI
     try {
-        $style = [WinAPI]::GetWindowLong($hwnd, $GWL_EXSTYLE)
-        [WinAPI]::SetWindowLong($hwnd, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
-        [WinAPI]::SetLayeredWindowAttributes($hwnd, 0, [byte]$opacityValue, $LWA_ALPHA) | Out-Null
-        Write-Host "`n✅  Transparência aplicada à janela '$title' com opacidade $opacityText." -ForegroundColor Green
+        $style = [WinAPI]::GetWindowLong($selectedWindowHandle, $GWL_EXSTYLE)
+        [WinAPI]::SetWindowLong($selectedWindowHandle, $GWL_EXSTYLE, $style -bor $WS_EX_LAYERED) | Out-Null
+        [WinAPI]::SetLayeredWindowAttributes($selectedWindowHandle, 0, [byte]$opacityValue, $LWA_ALPHA) | Out-Null
+        Write-Host "`n✅  Transparência aplicada à janela '$selectedWindowTitle' com opacidade $opacityText." -ForegroundColor Green
     }
     catch {
         Write-Host "`n❌  Falha ao aplicar transparência: $_" -ForegroundColor Red
@@ -135,10 +130,10 @@ function Apply-Transparency($hwnd, $title) {
 }
 
 # Define a janela como "sempre no topo" (topmost)
-function Apply-TopMost($hwnd, $title) {
+function Apply-TopMost($selectedWindowHandle, $selectedWindowTitle) {
     try {
-        [WinAPI]::SetWindowPos($hwnd, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
-        Write-Host "`n📌  Janela '$title' fixada no topo." -ForegroundColor Green
+        [WinAPI]::SetWindowPos($selectedWindowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW)
+        Write-Host "`n📌  Janela '$selectedWindowTitle' fixada no topo." -ForegroundColor Green
     }
     catch {
         Write-Host "`n❌  Falha ao fixar no topo: $_" -ForegroundColor Red
@@ -181,42 +176,60 @@ Check-WindowsVersion
 
 # Loop principal do programa
 do {
+    # Exibe o menu e captura a opção do usuário
     $option = Show-MainMenu
+
+    # Encerra o script se o usuário escolher "0"
     if ($option -eq "0") {
         Write-Host "`n👋  Encerrando o painel. Até a próxima!" -ForegroundColor Cyan
         break
     }
 
+    # Obtém a lista de janelas visíveis
     $windowList = Get-VisibleWindows
+
+    # Verifica se há janelas disponíveis
     if ($windowList.Count -eq 0) {
         Write-Host "`n⚠️  Nenhuma janela visível encontrada." -ForegroundColor Red
         Start-Sleep -Seconds 2
         continue
     }
 
+    # Exibe a lista de janelas para o usuário escolher
     Show-WindowList $windowList
+
+    # Solicita o índice da janela a ser manipulada
     $selectedIndex = Read-Host "`nDigite o número da janela que deseja manipular"
+
+    # Valida o índice informado
     if ($selectedIndex -notmatch '^\d+$' -or [int]$selectedIndex -ge $windowList.Count) {
         Write-Host "`n⚠️  Índice inválido. Tente novamente." -ForegroundColor Red
         Start-Sleep -Seconds 2
         continue
     }
 
+    # Obtém a janela selecionada e seu identificador
     $selectedWindow = $windowList[$selectedIndex]
-    $hwnd = Get-WindowHandle $selectedWindow
-    if (-not $hwnd -or $hwnd -eq [IntPtr]::Zero) {
+    $selectedWindowTitle = $selectedWindow.MainWindowTitle
+    $selectedWindowHandle = Get-WindowHandle $selectedWindow
+
+    # Verifica se o handle é válido
+    if (-not $selectedWindowHandle -or $selectedWindowHandle -eq [IntPtr]::Zero) {
         Write-Host "`n❌  Janela inválida ou inacessível." -ForegroundColor Red
         Start-Sleep -Seconds 2
         continue
     }
 
+    # Executa a ação escolhida pelo usuário
     switch ($option) {
-        "1" { Apply-Transparency $hwnd $selectedWindow.MainWindowTitle }
-        "2" { Apply-TopMost $hwnd $selectedWindow.MainWindowTitle }
+        "1" { Apply-Transparency $selectedWindowHandle $selectedWindowTitle }
+        "2" { Apply-TopMost $selectedWindowHandle $selectedWindowTitle }
         default {
             Write-Host "`n⚠️  Opção inválida. Tente novamente." -ForegroundColor Red
         }
     }
 
+    # Pausa antes de reiniciar o loop
     Start-Sleep -Seconds 2
+
 } while ($true)
