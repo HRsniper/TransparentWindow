@@ -35,17 +35,23 @@ function Get-UWPWindowHandle($process) {
     return $null
   }
 
-  # Retorna o primeiro handle com título válido
+  # Tenta encontrar a janela principal (com título não vazio e maior área visível)
+  $mainHandle = $null
   foreach ($hWnd in $handles) {
     $title = [WinAPI]::GetWindowTitle($hWnd)
     if (-not [string]::IsNullOrWhiteSpace($title)) {
-      Write-Host "🔍 Janela detectada: '$title'"
-      return $hWnd
+      $mainHandle = $hWnd
+      break
     }
   }
 
-  Show-Error "Não foi possível identificar uma janela com título válido."
-  return $null
+  if (-not $mainHandle) {
+    Show-Error "Não foi possível identificar uma janela com título válido."
+    return $null
+  }
+
+  Write-Host "🔍 Janela detectada: '$title'"
+  return $mainHandle
 }
 
 # Obtém o identificador da janela (HWND) do processo selecionado
@@ -68,25 +74,30 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
     # Obtém os estilos estendidos atuais da janela
     $style = [WinAPI]::GetWindowLongPtr($windowHandle, $GWL_EXSTYLE)
 
-    # Adiciona o estilo WS_EX_LAYERED para permitir transparência
-    $newStyle = $style -bor $WS_EX_LAYERED
-
     # Se o modo for "passive", adiciona WS_EX_TRANSPARENT para ignorar cliques
     if ($Mode -eq "passive") {
-      $newStyle = $newStyle -bor $WS_EX_TRANSPARENT
+      $newStyle = $style -bor $WS_EX_TRANSPARENT
     }
-
     # Remove o estilo WS_EX_TRANSPARENT se estiver presente
-    if ($Mode -eq "removeTransparent") {
+    elseif ($Mode -eq "removeTransparent") {
       $newStyle = $style -band (-bnot $WS_EX_TRANSPARENT)
     }
+    else {
+      $newStyle = $style
+    }
 
-    # Aplica os estilos atualizados
-    [WinAPI]::SetWindowLongPtr($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+    # Aplica transparência apenas se a janela já for camada (layered) ou se não for modo de remoção
+    if (($newStyle -band $WS_EX_LAYERED) -ne 0 -or $Mode -eq "removeTransparent") {
+      [WinAPI]::SetWindowLongPtr($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+    }
+    else {
+      # Se não for layered, adiciona o estilo apenas para aplicar transparência
+      $newStyle = $newStyle -bor $WS_EX_LAYERED
+      [WinAPI]::SetWindowLongPtr($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+    }
 
     # Aplica o nível de opacidade usando canal alpha
     [WinAPI]::SetLayeredWindowAttributes($windowHandle, 0, $opacityValue, $LWA_ALPHA) | Out-Null
-
     return $true
   }
   catch {
