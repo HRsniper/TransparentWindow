@@ -10,7 +10,7 @@ function Check-WindowsVersion {
 
 # Obtém a lista de janelas visíveis, excluindo processos críticos do sistema
 function Get-VisibleWindows {
-  $excludedProcesses = @("System", "Idle", "explorer", "svchost", "wininit", "services", "lsass", "csrss", "smss", "winlogon")
+  $excludedProcesses = @("System", "Idle", "explorer", "svchost", "wininit", "services", "lsass", "csrss", "smss", "winlogon", "TextInputHost")
   $windowList = @()
   Get-Process | Where-Object {
     $_.MainWindowTitle -and ($excludedProcesses -notcontains $_.ProcessName)

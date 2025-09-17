@@ -66,7 +66,7 @@ function Get-WindowHandle($process) {
 function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mode = "normal") {
   try {
     # Obtém os estilos estendidos atuais da janela
-    $style = [WinAPI]::GetWindowLong($windowHandle, $GWL_EXSTYLE)
+    $style = [WinAPI]::GetWindowLongPtr($windowHandle, $GWL_EXSTYLE)
 
     # Adiciona o estilo WS_EX_LAYERED para permitir transparência
     $newStyle = $style -bor $WS_EX_LAYERED
@@ -82,7 +82,7 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
     }
 
     # Aplica os estilos atualizados
-    [WinAPI]::SetWindowLong($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
+    [WinAPI]::SetWindowLongPtr($windowHandle, $GWL_EXSTYLE, $newStyle) | Out-Null
 
     # Aplica o nível de opacidade usando canal alpha
     [WinAPI]::SetLayeredWindowAttributes($windowHandle, 0, $opacityValue, $LWA_ALPHA) | Out-Null
