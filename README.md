@@ -27,6 +27,14 @@
 ./TransparentWindow.ps1
 ```
 
+#### Fazendo um atalho:
+
+- Se voce ja tem o [PowerShell 7](https://github.com/PowerShell/PowerShell)
+- Pegando o caminho `Get-Command pwsh | Select-Object Source`
+- Click direito > Novo > Atalho
+- Local do item: `"`caminho do powershell 7`"` `"`caminho do TransparentWindow.ps1`"`
+- Avançar > Nome do atalho > Concluir
+
 #### O menu aparecerá:
 
 ```
