@@ -1,4 +1,4 @@
-﻿Import-Module "$PSScriptRoot\WinAPI.psm1"
+Import-Module "$PSScriptRoot\WinAPI.psm1"
 Import-Module "$PSScriptRoot\WindowTools.psm1"
 Import-Module "$PSScriptRoot\WindowManager.psm1"
 
