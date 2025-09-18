@@ -33,7 +33,7 @@ function Get-UWPWindowHandle($process) {
   $processId = $process.Id
   $handles = [WinAPI]::GetWindowsByProcessId($processId)
   if ($handles.Count -eq 0) {
-    Show-Error "Nenhuma janela visível encontrada para o processo UWP."
+    Show-Error "⨉ Nenhuma janela visível encontrada para o processo UWP"
     return $null
   }
 
@@ -43,13 +43,13 @@ function Get-UWPWindowHandle($process) {
       # NOVO: Verifica se o handle é válido
       $title = [WinAPI]::GetWindowTitle($hWnd)
       if (-not [string]::IsNullOrWhiteSpace($title)) {
-        Write-Host "🔍 Janela detectada: '$title'" -ForegroundColor DarkGray
+        Write-Host "◧ Janela detectada: '$title'" -ForegroundColor DarkGray
         return $hWnd
       }
     }
   }
 
-  Show-Error "Não foi possível identificar uma janela com título válido."
+  Show-Error "⨉ Não foi possível identificar uma janela com título válido."
   return $null
 }
 
@@ -58,17 +58,17 @@ function Get-WindowHandle($process) {
   try {
     $handle = [IntPtr]$process.MainWindowHandle
     if ($handle -eq [IntPtr]::Zero) {
-      throw "Janela não possui MainWindowHandle."
+      throw "⨉ Janela não possui MainWindowHandle."
     }
     # NOVO: Verifica validade
     if (-not [WinAPI]::IsWindow($handle)) {
-      throw "Handle inválido ou janela não existe mais."
+      throw "⨉ Handle inválido ou janela não existe mais."
     }
-    Write-Host "🔍 Handle obtido: '$($process.ProcessName)'" -ForegroundColor DarkGray
+    Write-Host "◧ Handle obtido: '$($process.ProcessName)'" -ForegroundColor DarkGray
     return $handle
   }
   catch {
-    Show-Error "Erro ao obter HWND." $_
+    Show-Error "⨉ Erro ao obter HWND." $_
     return $null
   }
 }
@@ -77,7 +77,7 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
   try {
     # NOVO: Verifica se o handle é válido
     if (-not [WinAPI]::IsWindow($windowHandle)) {
-      throw "Handle de janela inválido ou não existe."
+      throw "⨉ Handle de janela inválido ou não existe."
     }
 
        # Obtém os estilos estendidos atuais da janela
@@ -118,7 +118,7 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
     return $true
   }
   catch {
-    Show-Error "Erro ao aplicar transparência via WinAPI." $_
+    Show-Error "⨉ Erro ao aplicar transparência via WinAPI." $_
     return $false
   }
 }
@@ -128,7 +128,7 @@ function Select-OpacityLevel {
   $options = $Global:opacityOptions
 
   # Exibe opções para o usuário
-  Write-Host "`n📊  Escolha o nível de opacidade:" -ForegroundColor Cyan
+  Write-Host "`n◐ Escolha o nível de opacidade:" -ForegroundColor Cyan
   for ($i = 0; $i -lt $options.Count; $i++) {
     $emojiIndex = Convert-ToEmojiNumber $i
     $percentage = $options[$i].Percentage
@@ -136,17 +136,17 @@ function Select-OpacityLevel {
   }
 
   # Captura entrada do usuário
-  $selectedOpacityIndex = Read-Host "`nDigite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
+  $selectedOpacityIndex = Read-Host "`n⫻ Digite o número da opacidade desejada ou pressione Enter para usar padrão (50%)"
 
   # Se vazio, retorna diretamente o objeto padrão (50%)
   if ([string]::IsNullOrWhiteSpace($selectedOpacityIndex)) {
-    Write-Host "🔧  Usando opacidade padrão: 50%" -ForegroundColor Yellow
+    Write-Host "⫻ Usando opacidade padrão: 50%" -ForegroundColor Yellow
     return $Global:opacityOptions[4]
   }
 
   # Valida entrada
   if ($selectedOpacityIndex -notmatch '^\d+$' -or [int]$selectedOpacityIndex -lt 0 -or [int]$selectedOpacityIndex -ge $options.Count) {
-    Show-Error "Índice inválido. Tente novamente."
+    Show-Error "⨉ Índice inválido. Tente novamente."
     return $null
   }
 
@@ -165,11 +165,11 @@ function Apply-Transparency($windowHandle, $windowTitle) {
   # Aplica transparência via WinAPI
   try {
     if (Set-WindowTransparency $windowHandle $opacityValue) {
-      Write-Host "`n✅  Transparência aplicada à janela '$windowTitle' com opacidade $opacityText." -ForegroundColor Green
+      Write-Host "`n✓ Transparência aplicada à janela '$windowTitle' com opacidade $opacityText." -ForegroundColor Green
     }
   }
   catch {
-    Show-Error "Falha ao aplicar transparência." $_
+    Show-Error "⨉ Falha ao aplicar transparência." $_
   }
 }
 
@@ -180,10 +180,10 @@ function Apply-TopMost($windowHandle, $windowTitle) {
     $topMostFlags = $SWP_NOMOVE -bor $SWP_NOSIZE -bor $SWP_SHOWWINDOW -bor $SWP_FRAMECHANGED
     [WinAPI]::SetWindowPos($windowHandle, $HWND_TOPMOST, 0, 0, 0, 0, $topMostFlags) | Out-Null
     [WinAPI]::ShowWindow($windowHandle, 5) | Out-Null  # SW_SHOW = 5
-    Write-Host "`n📌  Janela '$windowTitle' fixada no topo." -ForegroundColor Green
+    Write-Host "`n↪ Janela '$windowTitle' fixada no topo." -ForegroundColor Green
   }
   catch {
-    Show-Error "Falha ao fixar no topo com transparência interativa." $_
+    Show-Error "⨉ Falha ao fixar no topo com transparência interativa." $_
   }
 }
 
@@ -202,10 +202,10 @@ function Apply-PassiveTopMost($windowHandle, $windowTitle) {
     Apply-TopMost $windowHandle $windowTitle
 
     # Exibe mensagem adicional sobre o modo passivo
-    Write-Host "🫥  Modo passivo ativado: janela '$windowTitle' não captura cliques." -ForegroundColor DarkGray
+    Write-Host "◯ Modo passivo ativado: janela '$windowTitle' não captura cliques." -ForegroundColor DarkGray
   }
   catch {
-    Show-Error "Erro ao aplicar modo passivo no topo." $_
+    Show-Error "⨉ Erro ao aplicar modo passivo no topo." $_
   }
 }
 
@@ -219,10 +219,10 @@ function Undo-TopMost($windowHandle, $windowTitle) {
     [WinAPI]::SetWindowPos($windowHandle, $HWND_BOTTOM, 0, 0, 0, 0, $undoTopMostFlags) | Out-Null
     # Minimiza a janela após enviá-la para o fundo
     [WinAPI]::ShowWindow($windowHandle, 6) | Out-Null  # SW_MINIMIZE = 6
-    Write-Host "`n↩️  'Sempre no topo' desfeito, janela enviada para baixo e minimizada: '$windowTitle'." -ForegroundColor Green
+    Write-Host "`n↩ 'Sempre no topo' desfeito, janela enviada para baixo e minimizada: '$windowTitle'." -ForegroundColor Green
   }
   catch {
-    Show-Error "Falha ao desfazer 'sempre no topo'." $_
+    Show-Error "⨉ Falha ao desfazer 'sempre no topo'." $_
   }
 }
 
@@ -235,17 +235,17 @@ function Undo-PassiveTopMost($windowHandle, $windowTitle) {
     Undo-TopMost $windowHandle $windowTitle
 
     # Exibe mensagem de sucesso
-    Write-Host "`n🫥  Modo passivo desfeito. Janela '$windowTitle' voltou ao comportamento normal." -ForegroundColor DarkGray
+    Write-Host "`n◯ Modo passivo desfeito. Janela '$windowTitle' voltou ao comportamento normal." -ForegroundColor DarkGray
   }
   catch {
     # Exibe mensagem de erro em caso de falha
-    Show-Error "Erro ao desfazer modo passivo." $_
+    Show-Error "⨉ Erro ao desfazer modo passivo." $_
   }
 }
 
 # Função centralizada para exibir mensagens de erro
 function Show-Error($message, $detail = $null) {
-  Write-Host "`n❌  $message" -ForegroundColor Red
+  Write-Host "`n⨉ $message" -ForegroundColor Red
   if ($detail) {
     Write-Host "    Detalhe: $detail" -ForegroundColor DarkRed
   }

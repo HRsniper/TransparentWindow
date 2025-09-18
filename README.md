@@ -13,11 +13,11 @@
 
 ## 💻 Requisitos
 
-| Requisito      | Versão mínima                                                     |
-| -------------- | ----------------------------------------------------------------- |
-| **Windows**    | 10 (1803) ou superior                                             |
-| **PowerShell** | 7.0+                                                              |
-| **Console**    | Windows Terminal (recomendado) ou outro que suporte emoji Unicode |
+| Requisito      | Versão mínima                                    |
+| -------------- | ------------------------------------------------ |
+| **Windows**    | 10 (1803) ou superior                            |
+| **PowerShell** | 7.0+                                             |
+| **Console**    | Windows Terminal (recomendado) ou qualquer outro |
 
 ## Uso Rápido
 
@@ -38,23 +38,21 @@
 #### O menu aparecerá:
 
 ```
-╔════════════════════════════════════════╗
-║   🖥️ Gerenciador de Janelas Windows    ║
-╚════════════════════════════════════════╝
+╔════════════════════════════╗
+║  ◩ Gerenciador de Janelas  ║
+╚════════════════════════════╝
 
-0️⃣  Sair
-1️⃣  Aplicar transparência
-2️⃣  Fixar no topo
-3️⃣  Desafixar do topo
-4️⃣  Fixar no topo (modo passivo)
-5️⃣  Desafixar do topo (modo passivo)
+[0]  Sair
+[1]  Aplicar transparência
+[2]  Fixar no topo
+[3]  Desafixar do topo
+[4]  Fixar no topo (modo passivo)
+[5]  Desafixar do topo (modo passivo)
 
-⬆️  Escolha uma opção:
+↑ Escolha uma opção:
 ```
 
 Siga as instruções interativas – o script exibe a lista de janelas visíveis e permite a aplicação em cada uma separadamente.
-
-> **Dica**: Se estiver usando _Windows Terminal_, e se quiser ver os emoji, habilite o conjunto de fontes recomendado (`Segoe UI`). A ordem dos números caso queria usar como esta é `0 1 2 3 4 5 6 7 8 9`.
 
 ## 🆘 Problemas Comuns
 

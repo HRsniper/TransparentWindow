@@ -2,7 +2,7 @@
 function Check-WindowsVersion {
   $osVersion = [System.Environment]::OSVersion.Version
   if ($osVersion.Major -lt 10) {
-    Show-Error "Este script requer Windows 10 ou superior."
+    Show-Error "⨉ Este script requer Windows 10 ou superior."
     exit
   }
 }
@@ -29,7 +29,7 @@ function Show-WindowList($windowList) {
 
   $formatMask = "{0,-4} {1,-$maxProcessLength} {2,-$maxTitleLength}"
 
-  Write-Host "`n🪟  Janelas Visíveis:" -ForegroundColor Yellow
+  Write-Host "`n▨ Janelas Visíveis:" -ForegroundColor Yellow
 
   for ($i = 0; $i -lt $windowList.Count; $i++) {
     $window = $windowList[$i]
@@ -40,7 +40,7 @@ function Show-WindowList($windowList) {
     Write-Host ($formatMask -f "$emojiIndex", "$processName", "$windowTitle") -ForegroundColor Gray
   }
 
-  Write-Host "`n🔢  Total de janelas visíveis: $($windowList.Count)" -ForegroundColor DarkGray
+  Write-Host "`n▥ Total de janelas visíveis: $($windowList.Count)" -ForegroundColor DarkGray
 }
 
 # Converte um número inteiro em uma sequência de emojis numéricos
@@ -49,16 +49,16 @@ function Convert-ToEmojiNumber($number) {
   $emojiDigits = @()
   foreach ($digit in $digits) {
     $emojiDigits += switch ($digit) {
-      '0' { "0️⃣" }
-      '1' { "1️⃣" }
-      '2' { "2️⃣" }
-      '3' { "3️⃣" }
-      '4' { "4️⃣" }
-      '5' { "5️⃣" }
-      '6' { "6️⃣" }
-      '7' { "7️⃣" }
-      '8' { "8️⃣" }
-      '9' { "9️⃣" }
+      '0' { "[0]" }
+      '1' { "[1]" }
+      '2' { "[2]" }
+      '3' { "[3]" }
+      '4' { "[4]" }
+      '5' { "[5]" }
+      '6' { "[6]" }
+      '7' { "[7]" }
+      '8' { "[8]" }
+      '9' { "[9]" }
     }
   }
   return ($emojiDigits -join "")
@@ -67,9 +67,9 @@ function Convert-ToEmojiNumber($number) {
 # Exibe o menu principal com opções de ação
 function Show-MainMenu {
   # Clear-Host
-  $title = "🖥️  Gerenciador de Janelas Windows"
+  $title = "◩ Gerenciador de Janelas"
   $border = "═" * ($title.Length + 4)
-  $padding = (($border.Length - $title.Length) / 2) + 1
+  $padding = ($border.Length - $title.Length) / 2
   $titleLine = (" " * [Math]::Floor($padding)) + $title + (" " * [Math]::Ceiling($padding))
 
   Write-Host "╔$border╗" -ForegroundColor Cyan
@@ -94,9 +94,9 @@ function Show-MainMenu {
   # Captura e valida entrada do usuário
   $validOptions = $menuItems.Key
   do {
-    $option = Read-Host "`n⬆️  Escolha uma opção"
+    $option = Read-Host "`n↑ Escolha uma opção"
     if ($validOptions -notcontains $option) {
-      Show-Error "Opção inválida. Digite um número entre 0 e 5."
+      Show-Error "⨉ Opção inválida. Digite um número entre 0 e 5."
     }
   } while ($validOptions -notcontains $option)
 

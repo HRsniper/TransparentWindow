@@ -12,7 +12,7 @@ do {
 
   # Encerra o script se o usuário escolher "0"
   if ($option -eq "0") {
-    Write-Host "`n👋  Encerrando o painel. Até a próxima!" -ForegroundColor Cyan
+    Write-Host "`n◓ Encerrando o painel. Até a próxima!" -ForegroundColor Cyan
     break
   }
 
@@ -21,7 +21,7 @@ do {
 
   # Verifica se há janelas disponíveis
   if ($windowList.Count -eq 0) {
-    Show-Error "Nenhuma janela visível encontrada."
+    Show-Error "⨉ Nenhuma janela visível encontrada."
     Start-Sleep -Seconds 2
     continue
   }
@@ -30,11 +30,11 @@ do {
   Show-WindowList $windowList
 
   # Solicita o índice da janela a ser manipulada
-  $selectedWindowIndex = Read-Host "`nDigite o número da janela que deseja manipular"
+  $selectedWindowIndex = Read-Host "`n⫻ Digite o número da janela que deseja manipular"
 
   # Valida o índice informado
   if ($selectedWindowIndex -notmatch '^\d+$' -or [int]$selectedWindowIndex -ge $windowList.Count) {
-    Show-Error "Índice inválido. Tente novamente."
+    Show-Error "⨉ Índice inválido. Tente novamente."
     Start-Sleep -Seconds 2
     continue
   }
@@ -51,7 +51,7 @@ do {
 
   # Verifica se o handle é válido
   if (-not $selectedWindowHandle -or $selectedWindowHandle -eq [IntPtr]::Zero) {
-    Show-Error "Janela inválida ou inacessível."
+    Show-Error "⨉ Janela inválida ou inacessível."
     Start-Sleep -Seconds 2
     continue
   }
@@ -64,7 +64,7 @@ do {
     "4" { Apply-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
     "5" { Undo-PassiveTopMost $selectedWindowHandle $selectedWindowTitle }
     default {
-      Show-Error "Opção inválida. Tente novamente."
+      Show-Error "⨉ Opção inválida. Tente novamente."
     }
   }
 
