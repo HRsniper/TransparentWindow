@@ -78,12 +78,12 @@ function Show-MainMenu {
   Write-Host ""
 
   $menuItems = @(
+    @{ Key = "0"; Label = "Sair" },
     @{ Key = "1"; Label = "Aplicar transparência" },
     @{ Key = "2"; Label = "Fixar no topo" },
     @{ Key = "3"; Label = "Desafixar do topo" },
     @{ Key = "4"; Label = "Fixar no topo (modo passivo)" },
-    @{ Key = "5"; Label = "Desafixar do topo (modo passivo)" },
-    @{ Key = "0"; Label = "Sair" }
+    @{ Key = "5"; Label = "Desafixar do topo (modo passivo)" }
   )
 
   foreach ($item in $menuItems) {

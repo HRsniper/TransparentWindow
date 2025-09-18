@@ -63,5 +63,11 @@ public class WinAPI {
         GetWindowText(hWnd, sb, sb.Capacity);
         return sb.ToString();
     }
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool UpdateWindow(IntPtr hWnd);
 }
 "@
