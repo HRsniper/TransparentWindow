@@ -2,14 +2,27 @@
 
 > **Um utilitário de PowerShell 7 que aplica transparência, top‑most e modo passivo a janelas do Windows.**
 
-| ⭐  | Funcionalidades                         |
-| --- | --------------------------------------- |
+<table>
+<tr>
+<td valign="center" >
+<b>Interface Gráfica (GUI)</b>
+<br/>
+<img src=".github/test_gui.png" width="300">
+</td>
+<td>
+
+|     | Funcionalidades (CLI)                   |
+| :-- | :-------------------------------------- |
 | 0   | **Sair**                                |
 | 1   | **Aplicar transparência**               |
 | 2   | **Sempre no topo (topmost)**            |
-| 3   | **Desfazer sempre no topo (topmost)**   |
+| 3   | **Desfazer sempre no topo**             |
 | 4   | **Modo passivo (fixo + click‑through)** |
 | 5   | **Desfazer modo passivo**               |
+
+</td>
+</tr>
+</table>
 
 ## 💻 Requisitos
 
@@ -21,10 +34,16 @@
 
 ## Uso Rápido
 
-#### Execute:
+#### Execute (CLI):
 
 ```ps1
 ./TransparentWindow.ps1
+```
+
+#### Execute (GUI):
+
+```ps1
+./UITransparentWindow.ps1
 ```
 
 #### Fazendo um atalho:
@@ -32,8 +51,13 @@
 - Se voce ja tem o [PowerShell 7](https://github.com/PowerShell/PowerShell)
 - Pegando o caminho `Get-Command pwsh | Select-Object Source`
 - Click direito > Novo > Atalho
-- Local do item: `"`caminho do powershell 7`"` `"`caminho do TransparentWindow.ps1`"`
+- Local do item: exemplo: `"C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.0.0_x64__8wekyb3d8bbwe\pwsh.exe"` `"C:\Users\$env:USERNAME\Downloads\TransparentWindow\TransparentWindow.ps1"`
 - Avançar > Nome do atalho > Concluir
+
+#### Atalho para GUI:
+
+- Para ver a GUI a entrada é `UITransparentWindow.ps1`
+- Para mininizar terminal quando abrir a GUI `-WindowStyle Hidden -File` coloque entre caminho do powershell e do app
 
 #### O menu aparecerá:
 
@@ -66,4 +90,7 @@ Siga as instruções interativas – o script exibe a lista de janelas visíveis
 
 ## 📢 Referência
 
-- [Microsoft Docs](https://learn.microsoft.com/en-us/windows/win32/api/winuser/)
+- [Microsoft win32 api](https://learn.microsoft.com/en-us/windows/win32/api/winuser)
+- [Microsoft windows desktop api](https://learn.microsoft.com/pt-br/dotnet/api/?view=windowsdesktop-11.0)
+- [Microsoft net api](https://learn.microsoft.com/pt-br/dotnet/api/?view=net-11.0)
+- [Microsoft windows presentation foundation](https://learn.microsoft.com/pt-br/dotnet/desktop/wpf)
