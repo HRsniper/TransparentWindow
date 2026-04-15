@@ -80,7 +80,7 @@ function Set-WindowTransparency ($windowHandle, [byte]$opacityValue, [string]$Mo
       throw "⨉ Handle de janela inválido ou não existe."
     }
 
-       # Obtém os estilos estendidos atuais da janela
+    # Obtém os estilos estendidos atuais da janela
     $style = [WinAPI]::GetWindowLongPtr($windowHandle, $GWL_EXSTYLE)
 
     # Se o modo for "passive", adiciona WS_EX_TRANSPARENT para ignorar cliques
